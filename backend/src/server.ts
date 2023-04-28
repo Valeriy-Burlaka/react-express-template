@@ -2,6 +2,7 @@ import express, {
   type Request,
   type Response,
 } from 'express';
+import { body, validationResult } from 'express-validator';
 
 import { idGenerator as id } from './utils/id';
 
@@ -23,17 +24,29 @@ app.get('/messages', (req: Request, res: Response) => {
   return res.json(messages);
 });
 
-app.post('/messages', (req: Request, res: Response) => {
-  const newMessage: Message = {
-    id: id(),
-    text: req.body.text,
-    author: req.body.author,
-    timestamp: req.body.timestamp || Date.now(),
-  };
-  messages.push(newMessage);
+app.post(
+  '/messages',
+  [
+    body('text').notEmpty().withMessage('Text is required'),
+    body('author').notEmpty().withMessage('Author is required'),
+  ],
+  (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-  return res.status(201).json(newMessage);
-});
+    const newMessage: Message = {
+      id: id(),
+      text: req.body.text,
+      author: req.body.author,
+      timestamp: req.body.timestamp || Date.now(),
+    };
+    messages.push(newMessage);
+
+    return res.status(201).json(newMessage);
+  },
+);
 
 
 app.listen(PORT, () => {
