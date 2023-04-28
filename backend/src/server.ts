@@ -5,6 +5,7 @@ const PORT = process.env.PORT || 3001;
 
 const messages = [
   { text: 'Hi there!', author: 'Unknown', timestamp: new Date() },
+  { text: 'Any news?', author: 'Unknown', timestamp: new Date() },
 ];
 
 app.get('/messages', (req, res) => {
