@@ -14,8 +14,8 @@ const PORT = process.env.PORT || 3001;
 app.use(express.json());
 
 const messages = [
-  { id: id(), text: 'Hi there!', author: 'Unknown', timestamp: Date.now() },
-  { id: id(), text: 'Any news?', author: 'Unknown', timestamp: Date.now() },
+  { id: 'f6lc0la6k1nbb', text: 'Hi there!', author: 'Unknown', timestamp: 1682757551396 },
+  { id: 'f6lc0la6k3m5l', text: 'Any news?', author: 'Unknown', timestamp: 1682790735895 },
 ];
 
 const subscribedClients = new Map<string, Response>();
