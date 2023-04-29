@@ -18,6 +18,14 @@ const messages = [
   { id: id(), text: 'Any news?', author: 'Unknown', timestamp: Date.now() },
 ];
 
+const subscribedClients = new Map<string, Response>();
+
+function sendUpdateToClients(message: Message) {
+  subscribedClients.forEach((client) =>
+    client.write(`data: ${JSON.stringify(message)}\n\n`)
+  );
+}
+
 app.get('/messages', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
   
@@ -43,11 +51,30 @@ app.post(
       timestamp: req.body.timestamp || Date.now(),
     };
     messages.push(newMessage);
+    sendUpdateToClients(newMessage);
 
     return res.status(201).json(newMessage);
   },
 );
 
+app.get('/messages/updates', (req: Request, res: Response) => {
+  const clientId = req.header('X-Client-Id') || id();
+  const existingClient = subscribedClients.get(clientId);
+  if (existingClient) {
+    existingClient.end();
+  }
+  subscribedClients.set(clientId, res);
+  res.setHeader('X-Client-Id', clientId);
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  req.on('close', () => {
+    subscribedClients.get(clientId)?.end();
+    subscribedClients.delete(clientId);
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
