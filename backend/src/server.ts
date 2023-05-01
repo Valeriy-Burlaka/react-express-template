@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import express, {
   type Request,
   type Response,
@@ -7,6 +9,8 @@ import { body, validationResult } from 'express-validator';
 import { idGenerator as id } from './utils/id';
 
 import { type Message } from './types';
+
+const eventEmitter = new EventEmitter();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,12 +23,6 @@ const messages = [
 ];
 
 const subscribedClients = new Map<string, Response>();
-
-function sendUpdateToClients(message: Message) {
-  subscribedClients.forEach((client) =>
-    client.write(`data: ${JSON.stringify(message)}\n\n`)
-  );
-}
 
 app.get('/messages', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
@@ -51,7 +49,8 @@ app.post(
       timestamp: req.body.timestamp || Date.now(),
     };
     messages.push(newMessage);
-    sendUpdateToClients(newMessage);
+
+    eventEmitter.emit('newMessage', newMessage);
 
     return res.status(201).json(newMessage);
   },
@@ -64,6 +63,7 @@ app.get('/messages/updates', (req: Request, res: Response) => {
     existingClient.end();
   }
   subscribedClients.set(clientId, res);
+
   res.setHeader('X-Client-Id', clientId);
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -72,6 +72,11 @@ app.get('/messages/updates', (req: Request, res: Response) => {
 
   // // Tell the client to retry every 10 seconds if connectivity is lost
   // res.write('retry: 10000\n\n');
+
+  const onNewMessage = (message: Message) => {
+    res.write(`data: ${JSON.stringify(message)}\n\n`);
+  };
+  eventEmitter.on('newMessage', onNewMessage);
 
   req.on('close', () => {
     subscribedClients.get(clientId)?.end();
