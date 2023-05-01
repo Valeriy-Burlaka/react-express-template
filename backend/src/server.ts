@@ -70,12 +70,20 @@ app.get('/messages/updates', (req: Request, res: Response) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  // // Tell the client to retry every 10 seconds if connectivity is lost
+  // res.write('retry: 10000\n\n');
+
   req.on('close', () => {
     subscribedClients.get(clientId)?.end();
     subscribedClients.delete(clientId);
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
-});
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+  });
+}
+
+export default app;
