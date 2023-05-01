@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source ./utils.sh
+
 # Test /messages/updates SSE endpoint
 temp_file="updates_test.tmp"
 
@@ -11,8 +13,13 @@ curl_pid=$!
 sleep 1
 
 # Send a new message using POST /messages endpoint
-new_message='{"text":"Hello!","author":"Jay Hemp","timestamp":1624364100000}'
-curl -s -X POST -H "Content-Type: application/json" -d "$new_message" http://localhost:3001/messages
+# Test data
+text="Hello!"
+author="JayHemp"
+timestamp=$(python -c 'import time; print(int(time.time() * 1000))')
+response=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"text\": \"$text\", \"author\": \"$author\", \"timestamp\": \"$timestamp\"}" http://localhost:3001/messages)
+
+response_id=$(echo "$response" | jq -r '.id')
 
 # Give the server some time to broadcast the new message to connected clients
 sleep 1
@@ -20,15 +27,33 @@ sleep 1
 # Kill the curl process that listens for updates
 kill $curl_pid
 
-# Check the output of the /updates endpoint
-received_updates=$(cat "$temp_file")
-expected_update="data: $(echo "$new_message" | tr -d '\n')"
+# # Why are you not working!?!?!?!
+# IFS=$'\n' read -r actual_id actual_text actual_author actual_timestamp <<< "$(head -1 $temp_file | sed 's/data: //g' | jq -r '.id, .text, .author, .timestamp')"
+# # Parses only the first variable :cry: Workswhen running in terminal, but not in the script
+# echo $actual_id
+# echo $actual_text
+# echo $actual_author
+# echo $actual_timestamp
+
+sse_id=$(head -1 $temp_file | sed 's/data: //g' | jq -r '.id')
+sse_text=$(head -1 $temp_file | sed 's/data: //g' | jq -r '.text')
+sse_author=$(head -1 $temp_file | sed 's/data: //g' | jq -r '.author')
+sse_timestamp=$(head -1 $temp_file | sed 's/data: //g' | jq -r '.timestamp')
+
 rm "$temp_file"
 
-if [[ "$received_updates" == *"$expected_update"* ]]; then
-  echo "Test POST /messages and /updates: PASSED"
+if [[ "$response_id" == "$sse_id" && "$text" == "$sse_text" && "$author" == "$sse_author" && "$timestamp" == "$sse_timestamp" ]]; then
+  print_test_result "SSE update from /messages/updates endpoint" "passed"
 else
-  echo "Test POST /messages and /updates: FAILED"
-  echo "Expected update: $expected_update"
-  echo "Actual updates: $received_updates"
+  print_test_result "SSE update from /messages/updates endpoint" "failed"
+  echo "Expected:"
+  echo "  id: $response_id"
+  echo "  text: $text"
+  echo "  author: $author"
+  echo "  timestamp: $timestamp"
+  echo "Actual:"
+  echo "  id: $sse_id"
+  echo "  text: $sse_text"
+  echo "  author: $sse_author"
+  echo "  timestamp: $sse_timestamp"
 fi
