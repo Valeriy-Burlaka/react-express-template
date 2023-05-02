@@ -1,5 +1,7 @@
 import { type Message } from '../../../backend/src/types';
 
+import { MessagesProvider } from 'src/providers/MessagesProvider';
+
 import { Messages } from 'src/components/Messages';
 import { NewMessageForm } from 'src/components/NewMessageForm';
 
@@ -7,19 +9,21 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function Home({ data }: { data: Message[] }) {
   return (
-    <main>
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Messages
-            </h2>
+    <MessagesProvider initialMessages={data}>
+      <main>
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-lg w-full space-y-8">
+            <div>
+              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Messages
+              </h2>
+            </div>
+            <Messages />
+            <NewMessageForm />
           </div>
-          <Messages messages={data} />
-          <NewMessageForm />
         </div>
-      </div>
-    </main>
+      </main>
+    </MessagesProvider>
   );
 }
 
@@ -28,7 +32,7 @@ export async function getServerSideProps() {
   const response = await fetch(`${BACKEND_URL}/messages`);
   const data = await response.json();
 
-  console.log({data});
+  console.log('Server-side data:', data);
 
   return {
     props: {
