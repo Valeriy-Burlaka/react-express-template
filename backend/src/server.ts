@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 
+import cors from 'cors';
 import express, {
   type Request,
   type Response,
@@ -16,6 +17,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:3000',
+}));
 
 const messages = [
   { id: 'f6lc0la6k1nbb', text: 'Hi there!', author: 'Unknown', timestamp: 1682757551396 },
