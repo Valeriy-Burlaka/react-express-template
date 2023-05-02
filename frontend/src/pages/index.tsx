@@ -1,8 +1,9 @@
 import { type Message } from '../../../backend/src/types';
 
 import { Messages } from 'src/components/Messages';
+import { NewMessageForm } from 'src/components/NewMessageForm';
 
-const HOST = 'http://localhost:3001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function Home({ data }: { data: Message[] }) {
   return (
@@ -15,6 +16,7 @@ export default function Home({ data }: { data: Message[] }) {
             </h2>
           </div>
           <Messages messages={data} />
+          <NewMessageForm />
         </div>
       </div>
     </main>
@@ -23,7 +25,7 @@ export default function Home({ data }: { data: Message[] }) {
 
 export async function getServerSideProps() {
   console.log('Server siding fetching messages');
-  const response = await fetch(`${HOST}/messages`);
+  const response = await fetch(`${BACKEND_URL}/messages`);
   const data = await response.json();
 
   console.log({data});
